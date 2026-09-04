@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "improve_weekly_tso_forecasts"
+version = "1.0.0"
+description = "Weekly TSO load forecasting with ECMWF weather features (publication code)"
+requires-python = ">=3.10"
+dependencies = [
+    "pandas",
+    "numpy",
+    "scikit-learn",
+    "scipy",
+    "joblib",
+    "cdsapi",
+    "cfgrib",
+    "eccodeslib>=2.47.1.20; sys_platform != 'win32'",  # no Windows wheels, see README
+    "earthkit-data",
+    "xarray",
+    "epftoolbox2",
+]
+
+[tool.setuptools]
+py-modules = ["model_config", "country_config"]
+
+[tool.uv]
+# earthkit-data pulls in the ECMWF binary libraries (eccodeslib, eckit, eckitlib)
+# unconditionally, but none of them ship Windows wheels. Gate them so uv sync works
+# on Windows, where ecCodes comes from conda-forge instead (see README).
+override-dependencies = [
+    "eccodeslib>=2.47.1.20; sys_platform != 'win32'",
+    "eckit; sys_platform != 'win32'",
+    "eckitlib; sys_platform != 'win32'",
+]

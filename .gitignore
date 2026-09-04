@@ -1,0 +1,9 @@
+# build artifacts
+*.egg-info/
+__pycache__/
+.venv/
+
+# pipeline output, see README "Data"
+data/
+models/
+results/
