@@ -2,8 +2,11 @@
 *.egg-info/
 __pycache__/
 .venv/
+.ruff_cache/
 
-# pipeline output, see README "Data"
-data/
-models/
-results/
+# downloads stay local; the article run's features, forecasts, fits and scores are tracked,
+# see README "Output files in this repository"
+data/*
+!data/features/
+models/*_coefs.csv
+models/coefs_shards/

@@ -1,10 +1,12 @@
 """
-Download ECMWF TIGGE high-resolution forecasts from the CDS API.
+Download ECMWF TIGGE high-resolution forecasts from the ECMWF Data Store.
 
 One GRIB file per month covering Europe. Each file holds the 00:00 UTC init
 forecast with 6-hourly leadtimes covering the d+3..d+9 target window (66-234 h).
 
-Requires the CDS_API_KEY environment variable. See https://cds.climate.copernicus.eu/
+Requires the ECMWF_API_KEY environment variable, the personal access token of an
+ECMWF Data Store account (https://ecds.ecmwf.int) that has accepted the TIGGE
+licence.
 
 Output: data/ecmwf_grib/{YYYY}_{MM}.grib
 """
@@ -28,21 +30,18 @@ VARIABLES = [
     "total_cloud_cover",
     "surface_pressure",
     "total_precipitation",
-    "maximum_2_m_temperature_in_the_last_6_hours",
-    "minimum_2_m_temperature_in_the_last_6_hours",
 ]
 
-# 6-hourly leadtimes covering 00/06/12/18 UTC of days d+3..d+9, plus one step
-# before the first so accumulated fields (ssr, tp) can be differenced in 1b.
+# 6-hourly leadtimes covering 00/06/12/18 UTC of days d+3..d+9, plus one step before the first so accumulated fields (ssr, tp) can be differenced in 1b.
 FIRST_LEAD = 24 * min(HORIZONS) - 6
 LAST_LEAD  = 24 * max(HORIZONS) + 18
 LEADTIME_HOURS = [str(h) for h in range(FIRST_LEAD, LAST_LEAD + 1, 6)]
 
 START_YEAR, START_MONTH = 2021, 1
-END_YEAR,   END_MONTH   = 2026, 6
+END_YEAR,   END_MONTH   = 2026, 2
 
 # N, W, S, E — Europe bounding box.
-AREA = [75, -15, 30, 37]
+AREA = [71, -16, 27, 31]
 
 OUTPUT_DIR = Path(__file__).parent / "data" / "ecmwf_grib"
 
@@ -52,7 +51,7 @@ def main() -> None:
 
     client = cdsapi.Client(
         url="https://ecds.ecmwf.int/api",
-        key=os.environ["CDS_API_KEY"],
+        key=os.environ["ECMWF_API_KEY"],
     )
 
     for year in range(START_YEAR, END_YEAR + 1):

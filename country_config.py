@@ -1,5 +1,7 @@
 """Per-country and per-region configuration used by every pipeline step.
 City lat/lon are fetched from GeoNames.
+Each region dict maps a short region code to {name, region, lat, lon, is_capital}.
+COUNTRIES is the single source of truth that every other script imports.
 
 One point per administrative region, always at that region's administrative
 center, never at its largest city where the two differ.

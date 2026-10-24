@@ -1,16 +1,11 @@
 """
 Extract ECMWF TIGGE forecast data at city locations from monthly GRIB files.
 
-Reads GRIB with earthkit-data: fields are filtered per variable with
-FieldList.sel, decoded in bulk with to_numpy, and the city grid points are
-sliced out of the native reduced Gaussian grid by nearest-neighbour argmin.
-
 For each init day (00:00 UTC) emits 4 rows at timestamps 00/06/12/18 UTC.
 Columns: {region}_{var}_d+3 ... {region}_{var}_d+9 (the HORIZONS window)
 
 Variables stored per city (GRIB shortNames used as column labels):
-  Raw GRIB: 2t, 2d, mx2t6, mn2t6, 10u, 10v, ssr, tp, tcc, sp
-            (mx2t6/mn2t6 are the 2-m temperature extremes over the 6 h ending at each step)
+  Raw GRIB: 2t, 2d, 10u, 10v, ssr, tp, tcc, sp
   Derived:  wind_speed = sqrt(10u^2 + 10v^2)
             rh         = relative humidity % (Magnus formula from 2t + 2d)
             ssr_inc    = 6-hourly solar radiation increment (ssr[step] - ssr[step-6h])
@@ -31,7 +26,7 @@ from model_config import HORIZONS, POINT
 
 CITIES_BY_COUNTRY = {info["name"]: info["regions"] for info in COUNTRIES.values()}
 
-RAW_GRIB_VARS = ("2t", "2d", "mx2t6", "mn2t6", "10u", "10v", "ssr", "tp", "tcc", "sp")
+RAW_GRIB_VARS = ("2t", "2d", "10u", "10v", "ssr", "tp", "tcc", "sp")
 
 SUB_DAY_HOURS = [0, 6, 12, 18]
 
@@ -87,7 +82,6 @@ def extract_grib(grib_path: str, cities_by_country: dict) -> dict:
     cities = [(country, code, c) for country, regs in cities_by_country.items() for code, c in regs.items()]
     city_idx = np.array([np.argmin((lats - c["lat"])**2 + (lons - c["lon"])**2) for *_, c in cities])
 
-    # Per variable: filter with sel, decode all fields at once, keep only city columns.
     raw = {}
     for var in RAW_GRIB_VARS:
         sub = fieldlist.sel({"parameter.variable": var})
@@ -96,11 +90,11 @@ def extract_grib(grib_path: str, cities_by_country: dict) -> dict:
             continue
         vals = sub.to_numpy(flatten=True)
         assert vals.shape[1] == lats.size, f"{var}: grid changed mid-file"
-        raw[var] = (np.array(sub.metadata("date")), np.array(sub.metadata("step"), dtype=int), vals[:, city_idx].astype(np.float32))
+        raw[var] = (np.array(sub.metadata("date")), np.array(sub.metadata("step"), dtype=int),
+                    vals[:, city_idx].astype(np.float32))
     if not raw:
         return {c: pd.DataFrame() for c in cities_by_country}
 
-    # (init, step, city) cube per variable; combos a variable lacks stay NaN.
     init_dates = np.unique(np.concatenate([d for d, _, _ in raw.values()]))
     steps_h    = np.unique(np.concatenate([s for _, s, _ in raw.values()]))
     cubes = {}
